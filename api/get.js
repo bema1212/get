@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     }
 
     // Build the URL with the dynamic TARGET
-    const apiUrl = `https://yxorp-pi.vercel.app/api/handler?url=https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${target}`;
+    const apiUrl = `https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${target}`;
 
     // Forward the request to the external API using the fetch API on the server side
     const response = await fetch(apiUrl, {
