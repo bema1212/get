@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       const y = coordinates[2]; // Second coordinate (latitude)
 
       // Construct the new URL using the extracted coordinates
-      const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG:28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${x - 0.01},${y - 0.01},${x + 0.01},${y + 0.01}`;
+      const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG:28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${x},${y},${x + 2},${y + 2}`;
 
       // Fetch the new URL
       const response3 = await fetch(apiUrl3, { headers: { 'Content-Type': 'application/json' } });
