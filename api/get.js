@@ -20,6 +20,8 @@ export default async function handler(req, res) {
 
   
 
+    const apiUrl0 = `https://api.pdok.nl/bzk/locatieserver/search/v3_1/lookup?id=${target1}`;
+
     // Build the first API URL using target1
     const apiUrl1 = `https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${target1}`;
 
@@ -27,8 +29,17 @@ export default async function handler(req, res) {
     const apiUrl2 = `https://opendata.polygonentool.nl/wfs?service=wfs&version=2.0.0&request=getfeature&typename=se:OGC_Warmtevlak,se:OGC_Elektriciteitnetbeheerdervlak,se:OGC_Gasnetbeheerdervlak,se:OGC_Telecomvlak,se:OGC_Waternetbeheerdervlak,se:OGC_Rioleringsvlakken&propertyname=name,disciplineCode&outputformat=application/json&srsname=EPSG:28992&bbox=${target2}`;
 
     // Fetch both APIs concurrently
-    const [response1, response2] = await Promise.all([
-      fetch(apiUrl1, {
+    const [response0, response1, response2] = await Promise.all([
+      
+fetch(apiUrl0, {
+        headers: {
+          
+          'Content-Type': 'application/json',
+        }
+      }),
+
+
+fetch(apiUrl1, {
         headers: {
           "Authorization": process.env.AUTH_TOKEN, // Use environment variable for the token
           'Content-Type': 'application/json',
@@ -36,7 +47,7 @@ export default async function handler(req, res) {
       }),
       fetch(apiUrl2, {
         headers: {
-          "Authorization": process.env.AUTH_TOKEN, // Use environment variable for the token (if needed)
+          
           'Content-Type': 'application/json',
         }
       })
