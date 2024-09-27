@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 export default async function handler(req, res) {
   try {
     // Get the TARGET parameter from the query string
@@ -10,9 +8,9 @@ export default async function handler(req, res) {
     }
 
     // Build the URL with the dynamic TARGET
-    const url = `https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${target}`;
+    const url = `https://yxorp-pi.vercel.app/api/handler?url=https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${target}`;
 
-    // Send the request to the API with the Authorization header
+    // Send the request to the API using native fetch
     const response = await fetch(url, {
       headers: {
         "Authorization": process.env.AUTH_TOKEN, // Use environment variable for the token
