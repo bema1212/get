@@ -25,42 +25,46 @@ export default async function handler(req, res) {
 
     // Fetch both APIs concurrently
     const [response0, response1, response2] = await Promise.all([
-      fetch(apiUrl0, {
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }),
-      fetch(apiUrl1, {
-        headers: {
-          "Authorization": process.env.AUTH_TOKEN,
-          'Content-Type': 'application/json',
-        }
-      }),
-      fetch(apiUrl2, {
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
+      fetch(apiUrl0, { headers: { 'Content-Type': 'application/json' } }),
+      fetch(apiUrl1, { headers: { "Authorization": process.env.AUTH_TOKEN, 'Content-Type': 'application/json' } }),
+      fetch(apiUrl2, { headers: { 'Content-Type': 'application/json' } }),
     ]);
 
     // Check if all requests succeeded
     if (response0.ok && response1.ok && response2.ok) {
       const data0 = await response0.json();
+
+      // Log the received data0 for debugging
+      console.log('Data from API 0:', data0);
+
+      // Ensure centroide_rd exists in data0
+      if (!data0.centroide_rd) {
+        return res.status(400).json({ error: "centroide_rd not found in data0" });
+      }
+
       const centroide_rd = data0.centroide_rd; // Corrected variable name
       const coordinates = centroide_rd.match(/POINT\(([^ ]+) ([^ ]+)\)/);
 
       if (coordinates) {
-        const x = coordinates[1]; // First coordinate
-        const y = coordinates[2]; // Second coordinate
+        const x = parseFloat(coordinates[1]); // First coordinate
+        const y = parseFloat(coordinates[2]); // Second coordinate
         
-        // Build the apiUrl3 using the coordinates
-        const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG%3A28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${x - 1},${y - 1},${x + 1},${y + 1}`; // Adjust the bbox as necessary
+        // Build the apiUrl3 using the coordinates with a small buffer for BBOX
+        const buffer = 0.01; // Adjust this buffer as necessary
+        const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG%3A28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${x - buffer},${y - buffer},${x + buffer},${y + buffer}`;
 
+        // Fetch apiUrl3
         const response3 = await fetch(apiUrl3, {
-          headers: {
-            'Content-Type': 'application/json',
-          }
+          headers: { 'Content-Type': 'application/json' },
         });
+
+        // Log the response3 status for debugging
+        console.log('Response from API 3:', response3.status);
+
+        // Check if response3 is OK
+        if (!response3.ok) {
+          return res.status(500).json({ error: "Error fetching data from apiUrl3" });
+        }
 
         const data1 = await response1.json();
         const data2 = await response2.json();
@@ -84,7 +88,7 @@ export default async function handler(req, res) {
       res.status(500).json({ error: "Error fetching data from one or more APIs" });
     }
   } catch (error) {
-    console.error(error);
+    console.error('Error in handler:', error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
