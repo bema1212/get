@@ -49,8 +49,8 @@ export default async function handler(req, res) {
 
       // Combine the results into one JSON object
       const combinedData = {
-        dataFromFirstApi: data1,
-        dataFromSecondApi: data2,
+        data1: data1,
+        data2: data2,
       };
 
       // Send the combined data back to the client
