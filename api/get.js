@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     // Get target0, target1, and target2 from the query string
     const { target0, target1, target2 } = req.query;
 
-    // Validate target0, target1, and target2
+    // Validate both target1 and target2
     if (!target0 || !target1 || !target2) {
       return res.status(400).json({ error: "Both target0, target1, and target2 parameters are required" });
     }
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     const apiUrl1 = `https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${target1}`;
     const apiUrl2 = `https://opendata.polygonentool.nl/wfs?service=wfs&version=2.0.0&request=getfeature&typename=se:OGC_Warmtevlak,se:OGC_Elektriciteitnetbeheerdervlak,se:OGC_Gasnetbeheerdervlak,se:OGC_Telecomvlak,se:OGC_Waternetbeheerdervlak,se:OGC_Rioleringsvlakken&propertyname=name,disciplineCode&outputformat=application/json&srsname=EPSG:28992&bbox=${target2}`;
 
-    // Fetch all APIs concurrently
+    // Fetch both APIs concurrently
     const [response0, response1, response2] = await Promise.all([
       fetch(apiUrl0, {
         headers: { 'Content-Type': 'application/json' },
@@ -62,11 +62,10 @@ export default async function handler(req, res) {
 
     // Extract x and y coordinates
     const x = coordinates[1]; // First coordinate (X)
-    const yFirst = parseFloat(coordinates[2]); // Second coordinate (Y) for first use
-    const ySecond = yFirst + 1; // Second coordinate (Y) for the second use, add 1
+    const y = parseFloat(coordinates[2]) + 1; // Second coordinate (Y), add 1
 
     // Construct the URL for the next API call using the coordinates
-    const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&rows=1&INFO_FORMAT=application%2Fjson&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG%3A28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${x},${ySecond},${x},${ySecond}`;
+    const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application%2Fjson&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG%3A28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${x},${y},${x},${y}`;
 
     // Fetch the third API
     const response3 = await fetch(apiUrl3, {
@@ -88,10 +87,6 @@ export default async function handler(req, res) {
       data1: data1,
       data2: data2,
       data3: data3,
-      coordinates: {
-        firstCoordinate: { x, y: yFirst }, // Original coordinates
-        secondCoordinate: { x, y: ySecond }, // Adjusted coordinates (Y + 1)
-      }
     };
 
     // Send the combined data back to the client
