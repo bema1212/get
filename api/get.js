@@ -28,6 +28,8 @@ export default async function handler(req, res) {
     // Example: Pass target2 as a query parameter to the second API
     const apiUrl2 = `https://opendata.polygonentool.nl/wfs?service=wfs&version=2.0.0&request=getfeature&typename=se:OGC_Warmtevlak,se:OGC_Elektriciteitnetbeheerdervlak,se:OGC_Gasnetbeheerdervlak,se:OGC_Telecomvlak,se:OGC_Waternetbeheerdervlak,se:OGC_Rioleringsvlakken&propertyname=name,disciplineCode&outputformat=application/json&srsname=EPSG:28992&bbox=${target2}`;
 
+
+
     // Fetch both APIs concurrently
     const [response0, response1, response2] = await Promise.all([
       
@@ -52,19 +54,38 @@ fetch(apiUrl1, {
       })
     ]);
 
+
+
     // Check if both requests succeeded
     if (response0.ok && response1.ok && response2.ok) {
 
 const data0 = await response0.json();
-      
+const centroide_rd = Data0.centroide_rd;      
+const coordinates = centroide_rd.match(/POINT\(([^ ]+) ([^ ]+)\)/);
+const x = coordinates[1];
+const y = coordinates[2]; 
+const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application%2Fjson&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG%3A28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=`;
+
+ fetch(apiUrl3, {
+        headers: {
+          
+          'Content-Type': 'application/json',
+        }
+      })
+    ]);
+
+
+
 const data1 = await response1.json();
       const data2 = await response2.json();
+const data3 = await response3.json();
 
       // Combine the results into one JSON object
       const combinedData = {
 data0: data0,        
 data1: data1,
         data2: data2,
+data3: data3,
       };
 
       // Send the combined data back to the client
