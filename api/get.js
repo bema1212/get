@@ -54,7 +54,10 @@ fetch(apiUrl1, {
 
     // Check if both requests succeeded
     if (response0.ok && response1.ok && response2.ok) {
-      const data1 = await response1.json();
+
+const data0 = await response0.json();
+      
+const data1 = await response1.json();
       const data2 = await response2.json();
 
       // Combine the results into one JSON object
