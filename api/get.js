@@ -66,7 +66,7 @@ const x = coordinates[1];
 const y = coordinates[2]; 
 const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application%2Fjson&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG%3A28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=`;
 
- fetch(apiUrl3, {
+ await fetch(apiUrl3, {
         headers: {
           
           'Content-Type': 'application/json',
@@ -77,7 +77,7 @@ const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVI
 
 
 const data1 = await response1.json();
-      const data2 = await response2.json();
+const data2 = await response2.json();
 const data3 = await response3.json();
 
       // Combine the results into one JSON object
