@@ -11,16 +11,16 @@ export default async function handler(req, res) {
     }
 
     // Get target1 and target2 from the query string
-    const { target1, target2 } = req.query;
+    const { target0, target1, target2 } = req.query;
 
     // Validate both target1 and target2
-    if (!target1 || !target2) {
+    if (!target0 || !target1 || !target2) {
       return res.status(400).json({ error: "Both target1 and target2 parameters are required" });
     }
 
   
 
-    const apiUrl0 = `https://api.pdok.nl/bzk/locatieserver/search/v3_1/lookup?id=${target1}`;
+    const apiUrl0 = `https://api.pdok.nl/bzk/locatieserver/search/v3_1/lookup?id=${target0}`;
 
     // Build the first API URL using target1
     const apiUrl1 = `https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${target1}`;
@@ -33,11 +33,10 @@ export default async function handler(req, res) {
       
 fetch(apiUrl0, {
         headers: {
-          
+        
           'Content-Type': 'application/json',
         }
       }),
-
 
 fetch(apiUrl1, {
         headers: {
