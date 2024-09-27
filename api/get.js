@@ -8,10 +8,10 @@ export default async function handler(req, res) {
     }
 
     // Build the URL with the dynamic TARGET
-    const url = `https://yxorp-pi.vercel.app/api/handler?url=https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${target}`;
+    const apiUrl = `https://yxorp-pi.vercel.app/api/handler?url=https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${target}`;
 
-    // Send the request to the API using native fetch
-    const response = await fetch(url, {
+    // Forward the request to the external API using the fetch API on the server side
+    const response = await fetch(apiUrl, {
       headers: {
         "Authorization": process.env.AUTH_TOKEN, // Use environment variable for the token
         'Content-Type': 'application/json',
@@ -21,9 +21,10 @@ export default async function handler(req, res) {
     // Handle the response
     if (response.ok) {
       const data = await response.json();
+      // Return the data from the API to the client
       res.status(200).json(data);
     } else {
-      res.status(response.status).json({ error: "Error fetching data" });
+      res.status(response.status).json({ error: "Error fetching data from API" });
     }
   } catch (error) {
     console.error(error);
