@@ -40,18 +40,10 @@ export default async function handler(req, res) {
       const data1 = await response1.json();
       const data2 = await response2.json();
 
-      // Extract centroide_rd from data1
-      const { centroide_rd } = data1;
-      const coordinates = centroide_rd.replace('POINT(', '').replace(')', '').split(' '); // Extract X and Y
-
-      const x = parseFloat(coordinates[0]); // Convert X to a float
-      const y = parseFloat(coordinates[1]); // Convert Y to a float
-
-      // Calculate the bounding box
-      const bbox = `${x},${y},${x + 1},${y + 1}`; // Increment both X and Y by 1
+     
 
       // Construct the new URL with the bounding box
-      const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG:28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${bbox}`;
+      const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG:28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${target2}`;
 
       // Fetch the new URL
       const response3 = await fetch(apiUrl3, {
