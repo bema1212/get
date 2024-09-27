@@ -66,7 +66,7 @@ export default async function handler(req, res) {
     const ySecond = yFirst + 1; // Second coordinate (Y) for the second use, add 1
 
     // Construct the URL for the next API call using the coordinates
-    const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application%2Fjson&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG%3A28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${x},${ySecond},${x},${ySecond}`;
+    const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&rows=1&INFO_FORMAT=application%2Fjson&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG%3A28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${x},${ySecond},${x},${ySecond}`;
 
     // Fetch the third API
     const response3 = await fetch(apiUrl3, {
