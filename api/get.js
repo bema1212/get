@@ -19,25 +19,17 @@ export default async function handler(req, res) {
     }
 
     const apiUrl0 = `https://api.pdok.nl/bzk/locatieserver/search/v3_1/lookup?id=${target0}`;
-    const apiUrl1 = `https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${target1}`;
     const apiUrl2 = `https://opendata.polygonentool.nl/wfs?service=wfs&version=2.0.0&request=getfeature&typename=se:OGC_Warmtevlak,se:OGC_Elektriciteitnetbeheerdervlak,se:OGC_Gasnetbeheerdervlak,se:OGC_Telecomvlak,se:OGC_Waternetbeheerdervlak,se:OGC_Rioleringsvlakken&propertyname=name,disciplineCode&outputformat=application/json&srsname=EPSG:28992&bbox=${target2}`;
 
     // Fetch all three APIs concurrently
-    const [response0, response1, response2] = await Promise.all([
+    const [response0, response2] = await Promise.all([
       fetch(apiUrl0, { headers: { 'Content-Type': 'application/json' } }),
-      fetch(apiUrl1, {
-        headers: {
-          "Authorization": process.env.AUTH_TOKEN, // Use environment variable for the token
-          'Content-Type': 'application/json',
-        }
-      }),
       fetch(apiUrl2, { headers: { 'Content-Type': 'application/json' } })
     ]);
 
     // Check if all requests succeeded
-    if (response0.ok && response1.ok && response2.ok) {
+    if (response0.ok && response2.ok) {
       const data0 = await response0.json();
-      const data1 = await response1.json();
       const data2 = await response2.json();
 
       // Construct the new URL with the bounding box
@@ -70,6 +62,9 @@ export default async function handler(req, res) {
         // Create an array to hold all 'identificatie' values for data6
         const data6 = [];
 
+        // Map to store the results for each identificatie
+        const data6Results = {};
+
         console.log("data4.features:", data4.features);  // Log the features array to check its structure
 
         // Check if data4.features is an array
@@ -78,7 +73,27 @@ export default async function handler(req, res) {
           for (const feature of data4.features) {
             // Extract the identificatie and add it to data6
             if (feature.properties && feature.properties.identificatie) {
-              data6.push(feature.properties.identificatie);
+              const identificatie = feature.properties.identificatie;
+              data6.push(identificatie);
+
+              // Now we fetch apiUrl1 using identificatie as target1
+              const apiUrl1ForIdentificatie = `https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${identificatie}`;
+
+              // Fetch data for each identificatie
+              const responseIdentificatie = await fetch(apiUrl1ForIdentificatie, {
+                headers: {
+                  "Authorization": process.env.AUTH_TOKEN, // Use environment variable for the token
+                  'Content-Type': 'application/json',
+                }
+              });
+
+              if (responseIdentificatie.ok) {
+                const identificatieData = await responseIdentificatie.json();
+                data6Results[identificatie] = identificatieData; // Store the data for the identificatie
+              } else {
+                console.error(`Error fetching data for identificatie ${identificatie}: ${responseIdentificatie.statusText}`);
+                data6Results[identificatie] = { error: "Error fetching data" }; // Store an error message for the identificatie
+              }
             } else {
               console.warn(`Feature does not contain identificatie:`, feature); // Log if missing identificatie
             }
@@ -110,12 +125,12 @@ export default async function handler(req, res) {
         // Combine the results into one JSON object
         const combinedData = {
           data0: data0,
-          data1: data1,
           data2: data2,
           data3: data3, // Add data3 from the bbox fetch
           data4: data4, // Add data4 from the WFS fetch
           data5: data5, // Add data5 from additional feature requests
           data6: data6, // Add data6 which is the array of identificatie values
+          data6Results: data6Results, // Add results for each identificatie
         };
 
         // Send the combined data back to the client
