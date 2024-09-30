@@ -34,57 +34,20 @@ export default async function handler(req, res) {
       fetch(apiUrl2, { headers: { 'Content-Type': 'application/json' } })
     ]);
 
-    // Check if all requests succeeded
+    // Check if all initial requests succeeded
     if (response0.ok && response1.ok && response2.ok) {
       const data0 = await response0.json();
       const data1 = await response1.json();
       const data2 = await response2.json();
 
-      // Construct the new URL with the bounding box
+      // Fetch data from the bbox URL
       const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG:28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${target2}`;
-
-      // Fetch the new URL (bbox request)
       const response3 = await fetch(apiUrl3, {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      // Extract X and Y coordinates from target2
-      const [x, y] = target2.split(',').map(coord => parseFloat(coord));
-
-      // Create the URL for the additional request to the WFS service with the target2 coordinates
-      const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=&count=200&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${x},${y}</gml:coordinates></gml:Point><Distance units='m'>50</Distance></DWithin></Filter>`;
-
-      // Fetch the WFS service URL
-      const response4 = await fetch(apiUrl4, {
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      // Check if both new requests succeeded
-      if (response3.ok && response4.ok) {
+      if (response3.ok) {
         const data3 = await response3.json();
-        const data4 = await response4.json();
 
-        // Combine the results into one JSON object
-        const combinedData = {
-          data0: data0,
-          data1: data1,
-          data2: data2,
-          data3: data3, // Add data3 from the bbox fetch
-          data4: data4, // Add data4 from the WFS fetch
-        };
-
-        // Send the combined data back to the client
-        res.status(200).json(combinedData);
-      } else {
-        // Handle errors if one of the new requests is not OK
-        res.status(500).json({ error: "Error fetching data from the bbox or WFS API" });
-      }
-    } else {
-      // Handle errors if any of the first three responses are not OK
-      res.status(500).json({ error: "Error fetching data from one or more APIs" });
-    }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-}
+        // Fetch from the API using the response from apiUrl3
+        const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=100&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=%3CFilter%3E%
