@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       const [x, y] = target2.split(',').map(coord => parseFloat(coord));
 
       // Create the URL for the additional request to the WFS service with the target2 coordinates
-      const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=&count=200&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${x},${y}</gml:coordinates></gml:Point><Distance units='m'>50</Distance></DWithin></Filter>`;
+      const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=identificatie&count=200&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${x},${y}</gml:coordinates></gml:Point><Distance units='m'>50</Distance></DWithin></Filter>`;
 
       // Fetch the WFS service URL
       const response4 = await fetch(apiUrl4, {
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
           const coords = feature.geometry.coordinates.join(','); // Create a string from the coordinates
 
           // Construct the API URL for fetching additional data for each feature
-          const apiUrl5 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=1&outputFormat=application/json&srsName=EPSG:28992&typeName=bag:pand&count=1&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${coords}</gml:coordinates></gml:Point><Distance units='m'>1</Distance></DWithin></Filter>`;
+          const apiUrl5 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=identificatie&count=1&outputFormat=application/json&srsName=EPSG:28992&typeName=bag:pand&count=1&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${coords}</gml:coordinates></gml:Point><Distance units='m'>1</Distance></DWithin></Filter>`;
 
           // Fetch data for the current feature
           const response5 = await fetch(apiUrl5, {
