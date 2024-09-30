@@ -52,14 +52,21 @@ export default async function handler(req, res) {
       if (response3.ok) {
         const data3 = await response3.json();
 
-        // Extract identificatie and coordinates
-        const features = data3.features || [];
-        const identificatieCoordinates = features.map(feature => ({
-          identificatie: feature.properties.identificatie,
-          coordinates: feature.geometry.coordinates
-        }));
+        // Initialize array to hold identificatie and coordinates
+        const identificatieCoordinates = [];
 
-        // Add identificatie and coordinates to combinedData
+        // Loop through each feature to extract identificatie and coordinates
+        const features = data3.features || [];
+        features.forEach(feature => {
+          const identificatie = feature.properties.identificatie;
+          const coordinates = feature.geometry.coordinates;
+          identificatieCoordinates.push({
+            identificatie,
+            coordinates
+          });
+        });
+
+        // Add identificatieCoordinates to combinedData
         const combinedData = {
           data0: data0,
           data1: data1,
