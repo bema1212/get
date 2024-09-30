@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       const [x, y] = target2.split(',').map(coord => parseFloat(coord));
 
       // Create the URL for the additional request to the WFS service with the target2 coordinates
-      const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=&count=200&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${x},${y}</gml:coordinates></gml:Point><Distance units='m'>50</Distance></DWithin></Filter>`;
+      const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=identificatie&count=200&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${x},${y}</gml:coordinates></gml:Point><Distance units='m'>50</Distance></DWithin></Filter>`;
 
       // Fetch the WFS service URL
       const response4 = await fetch(apiUrl4, {
@@ -64,15 +64,18 @@ export default async function handler(req, res) {
         const data3 = await response3.json();
         const data4 = await response4.json();
 
-        // Initialize data5 and data6
+        // Initialize data5
         const data5 = [];
-        const data6 = [];
 
-        // Fetch additional data for each feature in data4 (coordinates fetch for data5)
+        // Fetch additional data for each feature in data4
         for (const feature of data4.features) {
+          // Get coordinates directly from the feature's geometry
           const coords = feature.geometry.coordinates.join(','); // Create a string from the coordinates
-          const apiUrl5 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=100&outputFormat=application/json&srsName=EPSG:28992&typeName=bag:pand&count=1&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${coords}</gml:coordinates></gml:Point><Distance units='m'>0.5</Distance></DWithin></Filter>`;
 
+          // Construct the API URL for fetching additional data for each feature
+          const apiUrl5 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=identificatie&count=1&outputFormat=application/json&srsName=EPSG:28992&typeName=bag:pand&count=1&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${coords}</gml:coordinates></gml:Point><Distance units='m'>1</Distance></DWithin></Filter>`;
+
+          // Fetch data for the current feature
           const response5 = await fetch(apiUrl5, {
             headers: { 'Content-Type': 'application/json' },
           });
@@ -83,24 +86,6 @@ export default async function handler(req, res) {
           } else {
             console.error(`Error fetching data for coordinates ${coords}: ${response5.statusText}`);
           }
-
-          // Fetch additional data for each feature's identificatie (fetch for data6)
-          const identificatie = feature.properties.identificatie;
-          const apiUrl6 = `https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${identificatie}`;
-
-          const response6 = await fetch(apiUrl6, {
-            headers: {
-              "Authorization": process.env.AUTH_TOKEN, // Use the same token as apiUrl1
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (response6.ok) {
-            const dataIdentificatie = await response6.json();
-            data6.push({ identificatie, data: dataIdentificatie }); // Add to data6 array with identificatie as key
-          } else {
-            console.error(`Error fetching data for identificatie ${identificatie}: ${response6.statusText}`);
-          }
         }
 
         // Combine the results into one JSON object
@@ -110,8 +95,7 @@ export default async function handler(req, res) {
           data2: data2,
           data3: data3, // Add data3 from the bbox fetch
           data4: data4, // Add data4 from the WFS fetch
-          data5: data5, // Add data5 from additional feature requests (coordinates)
-          data6: data6, // Add data6 from identificatie requests
+          data5: data5, // Add data5 from additional feature requests
         };
 
         // Send the combined data back to the client
