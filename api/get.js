@@ -43,7 +43,7 @@ export default async function handler(req, res) {
       // Construct the new URL with the bounding box
       const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG:28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${target2}`;
 
-      // Fetch the new URL (apiUrl3)
+      // Fetch the new URL
       const response3 = await fetch(apiUrl3, {
         headers: { 'Content-Type': 'application/json' },
       });
@@ -52,50 +52,30 @@ export default async function handler(req, res) {
       if (response3.ok) {
         const data3 = await response3.json();
 
-        // Extract the coordinates and identificatie from data3 to construct apiUrl4
-        const features = data3.features;
-        let allApiUrl4Data = [];
+        // Extract identificatie and coordinates
+        const features = data3.features || [];
+        const identificatieCoordinates = features.map(feature => ({
+          identificatie: feature.properties.identificatie,
+          coordinates: feature.geometry.coordinates
+        }));
 
-        for (let feature of features) {
-          const identificatie = feature.properties.identificatie;
-          const coordinates = feature.geometry.coordinates;
-          const x = coordinates[0];
-          const y = coordinates[1];
-
-          // Construct apiUrl4 for each identificatie and coordinates
-          const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=100&outputFormat=application/json&srsName=EPSG:28992&typeName=bag:pand&Filter=%3CFilter%3E%20%3CDWithin%3E%3CPropertyName%3EGeometry%3C/PropertyName%3E%3Cgml:Point%3E%20%3Cgml:coordinates%3E${x},${y}%3C/gml:coordinates%3E%20%3Cgml:Point%3E%3CDistance%20units=%27m%27%3E1%3C/Distance%3E%3C/DWithin%3E%3C/Filter%3E`;
-
-          // Fetch apiUrl4 and gather responses
-          const response4 = await fetch(apiUrl4, {
-            headers: { 'Content-Type': 'application/json' }
-          });
-
-          if (response4.ok) {
-            const data4 = await response4.json();
-            allApiUrl4Data.push({ identificatie, coordinates, data4 });
-          } else {
-            // Handle error for each apiUrl4 request
-            allApiUrl4Data.push({ identificatie, coordinates, error: "Error fetching data from apiUrl4" });
-          }
-        }
-
-        // Combine all results into one JSON object
+        // Add identificatie and coordinates to combinedData
         const combinedData = {
           data0: data0,
           data1: data1,
           data2: data2,
-          data3: data3, // Data from apiUrl3
-          data4: allApiUrl4Data // Data from all apiUrl4 requests
+          data3: data3, // Add data3 from the new fetch
+          identificatieCoordinates // New property added here
         };
 
         // Send the combined data back to the client
         res.status(200).json(combinedData);
       } else {
-        // Handle errors if apiUrl3 request fails
-        res.status(500).json({ error: "Error fetching data from the bbox API (apiUrl3)" });
+        // Handle errors if the new request is not OK
+        res.status(500).json({ error: "Error fetching data from the bbox API" });
       }
     } else {
-      // Handle errors if any of the initial responses fail
+      // Handle errors if any of the responses are not OK
       res.status(500).json({ error: "Error fetching data from one or more APIs" });
     }
   } catch (error) {
