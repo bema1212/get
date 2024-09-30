@@ -50,4 +50,64 @@ export default async function handler(req, res) {
         const data3 = await response3.json();
 
         // Fetch from the API using the response from apiUrl3
-        const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=100&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=%3CFilter%3E%
+        const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=100&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=%3CFilter%3E%20%3CDWithin%3E%3CPropertyName%3EGeometry%3C/PropertyName%3E%3Cgml:Point%3E%20%3Cgml:coordinates%3E${target2}%3C/gml:coordinates%3E%20%3C/gml:Point%3E%3CDistance%20units=%27m%27%3E50%3C/Distance%3E%3C/DWithin%3E%3C/Filter%3E`;
+        const response4 = await fetch(apiUrl4, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (response4.ok) {
+          const data4 = await response4.json();
+
+          // Now we process the features from data4 and fetch additional data for each "identificatie"
+          const fetchPromises = data4.features.map(async (feature) => {
+            const identificatie = feature.properties.identificatie;
+            const [x, y] = feature.geometry.coordinates;
+
+            // Construct the target3 value using the coordinates
+            const target3 = `${x},${y}`;
+
+            // Create the URL with the target3 coordinates for additional fetches
+            const apiUrlForIdentificatie = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=100&outputFormat=application/json&srsName=EPSG:28992&typeName=bag:pand&Filter=%3CFilter%3E%20%3CDWithin%3E%3CPropertyName%3EGeometry%3C/PropertyName%3E%3Cgml:Point%3E%20%3Cgml:coordinates%3E${target3}%3C/gml:coordinates%3E%20%3C/gml:Point%3E%3CDistance%20units=%27m%27%3E1%3C/Distance%3E%3C/DWithin%3E%3C/Filter%3E`;
+
+            // Fetch the data for this specific "identificatie"
+            const identificatieResponse = await fetch(apiUrlForIdentificatie, {
+              headers: { 'Content-Type': 'application/json' },
+            });
+
+            if (identificatieResponse.ok) {
+              const identificatieData = await identificatieResponse.json();
+              return { identificatie, identificatieData };
+            } else {
+              return { identificatie, error: 'Failed to fetch data' };
+            }
+          });
+
+          // Wait for all fetch requests for identificaties to complete
+          const identificatieResults = await Promise.all(fetchPromises);
+
+          // Combine all the data into one JSON object
+          const combinedData = {
+            data0, // apiUrl0 response
+            data1, // apiUrl1 response
+            data2, // apiUrl2 response
+            data3, // apiUrl3 response (bbox)
+            data4, // apiUrl4 response (verblijfsobjecten)
+            identificatieResults // Results from fetching for each identificatie
+          };
+
+          // Send the combined data back to the client
+          res.status(200).json(combinedData);
+        } else {
+          res.status(500).json({ error: 'Error fetching data from apiUrl4 (verblijfsobject)' });
+        }
+      } else {
+        res.status(500).json({ error: 'Error fetching data from apiUrl3 (bbox)' });
+      }
+    } else {
+      res.status(500).json({ error: "Error fetching data from one or more initial APIs" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
