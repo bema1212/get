@@ -48,8 +48,11 @@ export default async function handler(req, res) {
         headers: { 'Content-Type': 'application/json' },
       });
 
-         // Create the URL for the additional request to the WFS service with the target2 coordinates
-      const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=&count=200&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${target2}</gml:coordinates></gml:Point><Distance units='m'>50</Distance></DWithin></Filter>`;
+      // Extract X and Y coordinates from target2
+      const [x, y] = target2.split(',').map(coord => parseFloat(coord));
+
+      // Create the URL for the additional request to the WFS service with the target2 coordinates
+      const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=&count=200&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${x},${y}</gml:coordinates></gml:Point><Distance units='m'>50</Distance></DWithin></Filter>`;
 
       // Fetch the WFS service URL
       const response4 = await fetch(apiUrl4, {
