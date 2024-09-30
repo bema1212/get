@@ -63,8 +63,8 @@ export default async function handler(req, res) {
             const identificatie = feature.properties.identificatie;
             const [x, y] = feature.geometry.coordinates;
 
-            // Construct the target3 value using the coordinates
-            const target3 = `${x},${y}`;
+            // Format target3 coordinates as a string with comma-separated values
+            const target3 = `${x},${y},${y},${x}`; // As an example, repeat the x, y in this format
 
             // Create the URL with the target3 coordinates for additional fetches
             const apiUrlForIdentificatie = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=100&outputFormat=application/json&srsName=EPSG:28992&typeName=bag:pand&Filter=%3CFilter%3E%20%3CDWithin%3E%3CPropertyName%3EGeometry%3C/PropertyName%3E%3Cgml:Point%3E%20%3Cgml:coordinates%3E${target3}%3C/gml:coordinates%3E%20%3C/gml:Point%3E%3CDistance%20units=%27m%27%3E1%3C/Distance%3E%3C/DWithin%3E%3C/Filter%3E`;
