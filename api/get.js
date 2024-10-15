@@ -64,6 +64,11 @@ export default async function handler(req, res) {
         const data3 = await response3.json();
         const data4 = await response4.json();
 
+        const data4Properties = data4.features
+  .filter(feature => feature.properties) // Ensure the feature has properties
+  .map(feature => feature.properties); // Map to the properties only
+
+
         // Initialize data5
         const data5 = [];
 
@@ -113,7 +118,7 @@ export default async function handler(req, res) {
           data1: data1,
           data2: data2,
           data3: data3, // Add data3 from the bbox fetch
-          data4: data4, // Add data4 from the WFS fetch
+          data4: data4Properties, // Add data4 from the WFS fetch
           data5: data5, // Add data5 from additional feature requests
           data6: data6, // Add data6 which is the array of identificatie values
         };
