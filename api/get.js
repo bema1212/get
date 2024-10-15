@@ -64,63 +64,45 @@ export default async function handler(req, res) {
         const data3 = await response3.json();
         const data4 = await response4.json();
 
+        // Extract only the properties of each feature in data4
         const data4Properties = data4.features
-  .filter(feature => feature.properties) // Ensure the feature has properties
-  .map(feature => feature.properties); // Map to the properties only
+          .filter(feature => feature.properties) // Ensure the feature has properties
+          .map(feature => feature.properties); // Map to the properties only
 
+        // Prepare to fetch additional data for each identificatie
+        const additionalData = await Promise.all(data4Properties.map(async (item) => {
+          const { identificatie } = item;
+          const apiUrl = `https://yxorp-pi.vercel.app/api/handler?url=https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${identificatie}`; // Replace with actual API URL
 
-        // Initialize data5
-        const data5 = [];
-
-        // Create an array to hold all 'identificatie' values for data6
-        const data6 = [];
-
-        console.log("data4.features:", data4.features);  // Log the features array to check its structure
-
-        // Check if data4.features is an array
-        if (Array.isArray(data4.features)) {
-          // Fetch additional data for each feature in data4
-          for (const feature of data4.features) {
-            // Extract the identificatie and add it to data6
-            if (feature.properties && feature.properties.identificatie) {
-              data6.push(feature.properties.identificatie);
-            } else {
-              console.warn(`Feature does not contain identificatie:`, feature); // Log if missing identificatie
-            }
-
-            // Get coordinates directly from the feature's geometry
-            if (feature.geometry && feature.geometry.coordinates) {
-              const coords = feature.geometry.coordinates.join(','); // Create a string from the coordinates
-
-              // Construct the API URL for fetching additional data for each feature
-              const apiUrl5 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=100&outputFormat=application/json&srsName=EPSG:28992&typeName=bag:pand&count=1&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${coords}</gml:coordinates></gml:Point><Distance units='m'>0.5</Distance></DWithin></Filter>`;
-
-              // Fetch data for the current feature
-              const response5 = await fetch(apiUrl5, {
-                headers: { 'Content-Type': 'application/json' },
-              });
-
-              if (response5.ok) {
-                const dataFeature = await response5.json();
-                data5.push(dataFeature); // Add to data5 array
-              } else {
-                console.error(`Error fetching data for coordinates ${coords}: ${response5.statusText}`);
-              }
-            }
-          }
-        } else {
-          console.error("data4.features is not an array:", data4.features);
+          try {
+            const response = await fetch(apiUrl, {
+              headers: {
+          "Authorization": process.env.AUTH_TOKEN, // Use environment variable for the token
+          'Content-Type': 'application/json',
         }
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              return { identificatie, data }; // Return data along with identificatie for reference
+            } else {
+              console.error(`Error fetching data for identificatie ${identificatie}: ${response.statusText}`);
+              return { identificatie, error: response.statusText };
+            }
+          } catch (error) {
+            console.error(`Network error for identificatie ${identificatie}: ${error.message}`);
+            return { identificatie, error: error.message };
+          }
+        }));
 
         // Combine the results into one JSON object
         const combinedData = {
           data0: data0,
           data1: data1,
           data2: data2,
-          data3: data3, // Add data3 from the bbox fetch
-          data4: data4Properties, // Add data4 from the WFS fetch
-          data5: data5, // Add data5 from additional feature requests
-          data6: data6, // Add data6 which is the array of identificatie values
+          data3: data3,
+          data4: data4Properties, // Only properties from data4
+          additionalData: additionalData, // Add additional data here
         };
 
         // Send the combined data back to the client
