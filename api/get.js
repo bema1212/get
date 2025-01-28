@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     ]);
    
 
-    if (response0.ok && response1.ok && response2.ok && response5.ok) {
+    if (response0.ok && response1.ok && response2.ok) {
       const data0 = await response0.json();
       const data1 = await response1.json();
       const data2 = await response2.json();
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
         headers: { 'Content-Type': 'application/json' },
       });
        if (response5.ok) {
-        const data3 = await response3.json()};
+        const data5 = await response5.json()};
 
 
       
