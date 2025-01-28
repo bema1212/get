@@ -34,11 +34,14 @@ export default async function handler(req, res) {
       fetch(apiUrl5, { headers: { 'Content-Type': 'application/json' } })
     ]);
 
-    // Default values for the response data
+    // Initialize default values
     let data0, data1 = "none", data2, data5;
 
+    // Only process data if the fetch was successful
     if (response0.ok) {
       data0 = await response0.json();
+    } else {
+      data0 = null;
     }
 
     if (response1.ok) {
@@ -49,88 +52,94 @@ export default async function handler(req, res) {
 
     if (response2.ok) {
       data2 = await response2.json();
+    } else {
+      data2 = null;
     }
 
     if (response5.ok) {
       data5 = await response5.json();
+    } else {
+      data5 = null;
     }
 
-    if (data0 && data2 && data5) {
-      const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG:28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${target2}`;
-      const response3 = await fetch(apiUrl3, { headers: { 'Content-Type': 'application/json' } });
+    // If critical data is missing, return a proper error message
+    if (!data0 && !data2 && !data5) {
+      return res.status(500).json({ error: "Error fetching data from critical APIs" });
+    }
 
-      const [x, y] = target2.split(',').map(coord => parseFloat(coord));
+    // Fetch additional data from other APIs
+    const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG:28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${target2}`;
+    const response3 = await fetch(apiUrl3, { headers: { 'Content-Type': 'application/json' } });
 
-      const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=&count=200&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${x},${y}</gml:coordinates></gml:Point><Distance units='m'>50</Distance></DWithin></Filter>`;
-      const response4 = await fetch(apiUrl4, { headers: { 'Content-Type': 'application/json' } });
+    const [x, y] = target2.split(',').map(coord => parseFloat(coord));
 
-      if (response3.ok && response4.ok) {
-        const data3 = await response3.json();
-        const data4 = await response4.json();
+    const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=&count=200&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${x},${y}</gml:coordinates></gml:Point><Distance units='m'>50</Distance></DWithin></Filter>`;
+    const response4 = await fetch(apiUrl4, { headers: { 'Content-Type': 'application/json' } });
 
-        // Process data and continue as before
-        const data4Features = data4.features;
-        const additionalData = await Promise.all(data4Features.map(async (feature) => {
-          const identificatie = feature.properties?.identificatie;
-          if (!identificatie) return null; // Skip if no identificatie
+    if (response3.ok && response4.ok) {
+      const data3 = await response3.json();
+      const data4 = await response4.json();
 
-          const apiUrl = `https://yxorp-pi.vercel.app/api/handler?url=https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${identificatie}`;
-          
-          try {
-            const response = await fetch(apiUrl, {
-              headers: {
-                "Authorization": process.env.AUTH_TOKEN,
-                'Content-Type': 'application/json',
-              }
-            });
+      // Process data and continue as before
+      const data4Features = data4.features;
+      const additionalData = await Promise.all(data4Features.map(async (feature) => {
+        const identificatie = feature.properties?.identificatie;
+        if (!identificatie) return null; // Skip if no identificatie
 
-            if (response.ok) {
-              const data = await response.json();
-              return { identificatie, data };
-            } else {
-              return { identificatie, error: response.statusText };
+        const apiUrl = `https://yxorp-pi.vercel.app/api/handler?url=https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${identificatie}`;
+        
+        try {
+          const response = await fetch(apiUrl, {
+            headers: {
+              "Authorization": process.env.AUTH_TOKEN,
+              'Content-Type': 'application/json',
             }
-          } catch (error) {
-            return { identificatie, error: error.message };
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            return { identificatie, data };
+          } else {
+            return { identificatie, error: response.statusText };
           }
-        }));
+        } catch (error) {
+          return { identificatie, error: error.message };
+        }
+      }));
 
-        // Filter out null results due to missing identificatie
-        const additionalDataFiltered = additionalData.filter(item => item !== null);
+      // Filter out null results due to missing identificatie
+      const additionalDataFiltered = additionalData.filter(item => item !== null);
 
-        // Map additional data based on identificatie for merging
-        const additionalDataMap = new Map();
-        additionalDataFiltered.forEach(item => {
-          additionalDataMap.set(item.identificatie, item);
-        });
+      // Map additional data based on identificatie for merging
+      const additionalDataMap = new Map();
+      additionalDataFiltered.forEach(item => {
+        additionalDataMap.set(item.identificatie, item);
+      });
 
-        // Merge additionalData with each feature in data4
-        const mergedData = data4Features.map(feature => {
-          const identificatie = feature.properties?.identificatie;
-          const additionalInfo = additionalDataMap.get(identificatie);
+      // Merge additionalData with each feature in data4
+      const mergedData = data4Features.map(feature => {
+        const identificatie = feature.properties?.identificatie;
+        const additionalInfo = additionalDataMap.get(identificatie);
 
-          return {
-            ...feature,
-            additionalData: additionalInfo ? additionalInfo.data : null,
-            error: additionalInfo ? additionalInfo.error : null
-          };
-        });
-
-        const combinedData = {
-          LOOKUP: data0,
-          EPON: data1, // EPON will be "none" if url1 failed
-          NETB: data2,
-          KADAS: data3,
-          OBJECT: data5,
-          MERGED: mergedData
+        return {
+          ...feature,
+          additionalData: additionalInfo ? additionalInfo.data : null,
+          error: additionalInfo ? additionalInfo.error : null
         };
+      });
 
-        res.status(200).json(combinedData);
-      } else {
-        res.status(500).json({ error: "Error fetching data from the bbox or WFS API" });
-      }
+      const combinedData = {
+        LOOKUP: data0 || "none",   // If data0 is null, return "none"
+        EPON: data1,               // EPON will be "none" if url1 failed
+        NETB: data2 || "none",     // If data2 is null, return "none"
+        KADAS: data3 || "none",    // If data3 is null, return "none"
+        OBJECT: data5 || "none",   // If data5 is null, return "none"
+        MERGED: mergedData
+      };
+
+      res.status(200).json(combinedData);
     } else {
-      res.status(500).json({ error: "Error fetching data from one or more APIs" });
+      res.status(500).json({ error: "Error fetching data from the bbox or WFS API" });
     }
   } catch (error) {
     console.error(error);
