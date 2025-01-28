@@ -18,8 +18,9 @@ export default async function handler(req, res) {
     const apiUrl0 = `https://api.pdok.nl/bzk/locatieserver/search/v3_1/lookup?id=${target0}`;
     const apiUrl1 = `https://public.ep-online.nl/api/v5/PandEnergielabel/AdresseerbaarObject/${target1}`;
     const apiUrl2 = `https://opendata.polygonentool.nl/wfs?service=wfs&version=2.0.0&request=getfeature&typename=se:OGC_Warmtevlak,se:OGC_Elektriciteitnetbeheerdervlak,se:OGC_Gasnetbeheerdervlak,se:OGC_Telecomvlak,se:OGC_Waternetbeheerdervlak,se:OGC_Rioleringsvlakken&propertyname=name,disciplineCode&outputformat=application/json&srsname=EPSG:28992&bbox=${target2}`;
-
-    const [response0, response1, response2] = await Promise.all([
+   const apiUrl5 ='https://service.pdok.nl/lv/bag/wfs/v2_0?service=wfs&version=2.0.0&request=getfeature&typeName=bag:verblijfsobject&outputformat=application/json&srsName=EPSG:4326&filter=%3Cfes:Filter%20xmlns:fes=%22http://www.opengis.net/fes/2.0%22%20xmlns:xsi=%22http://www.w3.org/2001/XMLSchema-instance%22%20xsi:schemaLocation=%22http://www.opengis.net/wfs/2.0%20http://schemas.opengis.net/wfs/2.0/wfs.xsd%22%3E%3Cfes:PropertyIsEqualTo%3E%3Cfes:PropertyName%3Eidentificatie%3C/fes:PropertyName%3E%3Cfes:Literal%3E${target1}%3C/fes:Literal%3E%3C/fes:PropertyIsEqualTo%3E%3C/fes:Filter%3E''
+     
+    const [response0, response1, response2,response5] = await Promise.all([
       fetch(apiUrl0, { headers: { 'Content-Type': 'application/json' } }),
       fetch(apiUrl1, {
         headers: {
@@ -29,12 +30,14 @@ export default async function handler(req, res) {
       }),
       fetch(apiUrl2, { headers: { 'Content-Type': 'application/json' } })
     ]);
+      fetch(apiUrl5, { headers: { 'Content-Type': 'application/json' } })
+    ]);
 
-    if (response0.ok && response1.ok && response2.ok) {
+    if (response0.ok && response1.ok && response2.ok && response5.ok) {
       const data0 = await response0.json();
       const data1 = await response1.json();
       const data2 = await response2.json();
-
+      const data5 = await response2.json();
       const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG:28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${target2}`;
       const response3 = await fetch(apiUrl3, {
         headers: { 'Content-Type': 'application/json' },
@@ -101,11 +104,12 @@ export default async function handler(req, res) {
         });
 
         const combinedData = {
-          data0,
+          LOOKUP: data0,
           EPON: data1,
-          data2,
-          data3,
-          mergedData
+          NETB: data2,
+          KADAS: data3,
+          PAND: data5,
+          MERGED: mergedData
         };
 
         res.status(200).json(combinedData);
