@@ -102,7 +102,7 @@ export default async function handler(req, res) {
 
         const combinedData = {
           data0,
-          data1,
+          EPON: data1,
           data2,
           data3,
           mergedData
