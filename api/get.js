@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+cexport default async function handler(req, res) {
   try {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
