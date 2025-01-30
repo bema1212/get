@@ -47,70 +47,36 @@ export default async function handler(req, res) {
       fetchWithErrorHandling(apiUrl6, { headers: { 'Content-Type': 'application/json' } })
     ]);
 
-    if (!response3 || !response4 || !data6) {
-      return res.status(500).json({ error: "Error fetching data from the bbox or WFS API" });
+    if (!data6 || !data5 || !data4 || !data3) {
+      return res.status(500).json({ error: "Error fetching necessary data" });
     }
 
-    const data3 = response3;
-    const data4 = response4;
-
+    // Create a map of identificatie to geometry for quick lookups from data6
     const data6Map = new Map();
-    // Create a map from data6 using identificatie as the key
     data6.features?.forEach(feature => {
       const identificatie = feature.properties?.identificatie;
       if (identificatie && feature.geometry) {
-        data6Map.set(identificatie, feature.geometry); // Store the geometry from data6
+        data6Map.set(identificatie, feature.geometry); // Store the geometry by identificatie
       }
     });
 
+    // Now, iterate over the mergedData (which is data4Features) and add geometry if pandidentificatie matches identificatie
     const data4Features = data4.features || [];
-
-    const additionalData = await Promise.all(data4Features.map(async (feature) => {
-      const identificatie = feature.properties?.identificatie;
-      if (!identificatie) return null;
-
-      const apiUrl = `https://yxorp-pi.vercel.app/api/handler?url=https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${identificatie}`;
-
-      try {
-        const response = await fetch(apiUrl, {
-          headers: {
-            "Authorization": process.env.AUTH_TOKEN,
-            'Content-Type': 'application/json',
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          return { identificatie, data };
-        } else {
-          return { identificatie, error: response.statusText };
-        }
-      } catch (error) {
-        return { identificatie, error: error.message };
-      }
-    }));
-
-    const additionalDataFiltered = additionalData.filter(item => item !== null);
-
-    const additionalDataMap = new Map();
-    additionalDataFiltered.forEach(item => {
-      additionalDataMap.set(item.identificatie, item);
-    });
 
     const mergedData = data4Features
       .map(feature => {
-        const identificatie = feature.properties?.identificatie;
-        const additionalInfo = additionalDataMap.get(identificatie);
+        const pandidentificatie = feature.properties?.pandidentificatie;
+        const additionalInfo = additionalDataMap.get(pandidentificatie);
 
         // Only include the feature if there is no error in the additional data
         if (!additionalInfo || additionalInfo.error) {
           return null; // Skip this feature if there's an error or no additional data
         }
 
-        // Find matching geometry from data6 based on identificatie (pandidentificatie in mergedData)
-        const geometry = data6Map.get(feature.properties?.pandidentificatie);
+        // Match the pandidentificatie to identificatie and add geometry from data6 if available
+        const geometry = data6Map.get(pandidentificatie);
         if (geometry) {
-          feature.geometry = geometry; // Add geometry from data6 to the feature
+          feature.geometry = geometry; // Add the geometry from data6 to the feature
         }
 
         return {
