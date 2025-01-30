@@ -51,6 +51,7 @@ export default async function handler(req, res) {
 
     const [x, y] = target2.split(',').map(coord => parseFloat(coord));
     const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=&count=200&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${x},${y}</gml:coordinates></gml:Point><Distance units='m'>50</Distance></DWithin></Filter>`;
+
     const response4 = await fetchWithErrorHandling(apiUrl4, { headers: { 'Content-Type': 'application/json' } });
 
     if (!response3 || !response4) {
@@ -88,29 +89,36 @@ export default async function handler(req, res) {
     }));
 
     const additionalDataFiltered = additionalData.filter(item => item !== null);
+
     const additionalDataMap = new Map();
     additionalDataFiltered.forEach(item => {
       additionalDataMap.set(item.identificatie, item);
     });
 
-    const mergedData = data4Features.map(feature => {
-      const identificatie = feature.properties?.identificatie;
-      const additionalInfo = additionalDataMap.get(identificatie);
+    const mergedData = data4Features
+      .map(feature => {
+        const identificatie = feature.properties?.identificatie;
+        const additionalInfo = additionalDataMap.get(identificatie);
 
-      return {
-        ...feature,
-        additionalData: additionalInfo ? additionalInfo.data : null,
-        error: additionalInfo ? additionalInfo.error : null
-      };
-    });
+        // Only include the feature if there is no error in the additional data
+        if (!additionalInfo || additionalInfo.error) {
+          return null; // Skip this feature if there's an error or no additional data
+        }
+
+        return {
+          ...feature,
+          additionalData: additionalInfo.data, // Only include the successful data
+        };
+      })
+      .filter(item => item !== null); // Remove any null (error or missing) entries
 
     const combinedData = {
       LOOKUP: data0,
-  EPON: data1,
-  NETB: data2,
-  KADAS: data3,
-  OBJECT: data5,
-  MERGED: mergedData
+      EPON: data1,
+      NETB: data2,
+      KADAS: data3,
+      OBJECT: data5,
+      MERGED: mergedData // Only includes successful data
     };
 
     res.status(200).json(combinedData);
