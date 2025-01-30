@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         return await response.json();
       } catch (error) {
         console.error(`Error fetching ${url}:`, error.message);
-        return null; // Return null so execution continues
+        return { error: "error" }; // Return an object with just "error" as the result
       }
     };
 
@@ -105,12 +105,12 @@ export default async function handler(req, res) {
     });
 
     const combinedData = {
-      LOOKUP: data0 || { error: "Failed to fetch LOOKUP data" },
-      EPON: data1 || { error: "Failed to fetch EPON data" },
-      NETB: data2 || { error: "Failed to fetch NETB data" },
-      KADAS: data3 || { error: "Failed to fetch KADAS data" },
-      OBJECT: data5 || { error: "Failed to fetch OBJECT data" },
-      MERGED: mergedData
+      LOOKUP: data0,
+  EPON: data1,
+  NETB: data2,
+  KADAS: data3,
+  OBJECT: data5,
+  MERGED: mergedData
     };
 
     res.status(200).json(combinedData);
