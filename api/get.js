@@ -46,20 +46,26 @@ export default async function handler(req, res) {
       fetchWithErrorHandling(apiUrl5, { headers: { 'Content-Type': 'application/json' } })
     ]);
 
+    // Extract coordinates from target2 (assumed to be in format "x,y")
+    const [x, y] = target2.split(',').map(coord => parseFloat(coord));
+    
     const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG:28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${target2}`;
     const response3 = await fetchWithErrorHandling(apiUrl3, { headers: { 'Content-Type': 'application/json' } });
 
-    const [x, y] = target2.split(',').map(coord => parseFloat(coord));
     const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=&count=200&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${x},${y}</gml:coordinates></gml:Point><Distance units='m'>50</Distance></DWithin></Filter>`;
-
     const response4 = await fetchWithErrorHandling(apiUrl4, { headers: { 'Content-Type': 'application/json' } });
 
-    if (!response3 || !response4) {
+    // New API URL added in parallel
+    const apiUrl6 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=100&outputFormat=application/json&srsName=EPSG:28992&typeName=bag:pand&Filter=%3CFilter%3E%20%3CDWithin%3E%3CPropertyName%3EGeometry%3C/PropertyName%3E%3Cgml:Point%3E%20%3Cgml:coordinates%3E${x},${y}%3C/gml:coordinates%3E%20%3C/gml:Point%3E%3CDistance%20units=%27m%27%3E50%3C/Distance%3E%3C/DWithin%3E%3C/Filter%3E`;
+    const response6 = await fetchWithErrorHandling(apiUrl6, { headers: { 'Content-Type': 'application/json' } });
+
+    if (!response3 || !response4 || !response6) {
       return res.status(500).json({ error: "Error fetching data from the bbox or WFS API" });
     }
 
     const data3 = response3;
     const data4 = response4;
+    const data6 = response6;
 
     const data4Features = data4.features || [];
 
@@ -118,7 +124,8 @@ export default async function handler(req, res) {
       NETB: data2,
       KADAS: data3,
       OBJECT: data5,
-      MERGED: mergedData // Only includes successful data
+      MERGED: mergedData, // Only includes successful data
+      PAND: data6 // Include data from the new request
     };
 
     res.status(200).json(combinedData);
