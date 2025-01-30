@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       }
     };
 
-    const [data0, data1, data2, data5] = await Promise.all([
+    const [data0, data1, data2, data5, data6] = await Promise.all([
       fetchWithErrorHandling(apiUrl0, { headers: { 'Content-Type': 'application/json' } }),
       fetchWithErrorHandling(apiUrl1, {
         headers: {
@@ -43,7 +43,8 @@ export default async function handler(req, res) {
         }
       }),
       fetchWithErrorHandling(apiUrl2, { headers: { 'Content-Type': 'application/json' } }),
-      fetchWithErrorHandling(apiUrl5, { headers: { 'Content-Type': 'application/json' } })
+      fetchWithErrorHandling(apiUrl5, { headers: { 'Content-Type': 'application/json' } }),
+      fetchWithErrorHandling(apiUrl6, { headers: { 'Content-Type': 'application/json' } })
     ]);
 
     // Extract coordinates from target2 (assumed to be in format "x,y")
@@ -55,17 +56,21 @@ export default async function handler(req, res) {
     const apiUrl4 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&propertyname=&count=200&outputFormat=json&srsName=EPSG:28992&typeName=bag:verblijfsobject&Filter=<Filter><DWithin><PropertyName>Geometry</PropertyName><gml:Point><gml:coordinates>${x},${y}</gml:coordinates></gml:Point><Distance units='m'>50</Distance></DWithin></Filter>`;
     const response4 = await fetchWithErrorHandling(apiUrl4, { headers: { 'Content-Type': 'application/json' } });
 
-    // New API URL added in parallel
-    const apiUrl6 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=100&outputFormat=application/json&srsName=EPSG:28992&typeName=bag:pand&Filter=%3CFilter%3E%20%3CDWithin%3E%3CPropertyName%3EGeometry%3C/PropertyName%3E%3Cgml:Point%3E%20%3Cgml:coordinates%3E${x},${y}%3C/gml:coordinates%3E%20%3C/gml:Point%3E%3CDistance%20units=%27m%27%3E50%3C/Distance%3E%3C/DWithin%3E%3C/Filter%3E`;
-    const response6 = await fetchWithErrorHandling(apiUrl6, { headers: { 'Content-Type': 'application/json' } });
-
-    if (!response3 || !response4 || !response6) {
+    if (!response3 || !response4 || !data6) {
       return res.status(500).json({ error: "Error fetching data from the bbox or WFS API" });
     }
 
     const data3 = response3;
     const data4 = response4;
-    const data6 = response6;
+
+    const data6Map = new Map();
+    // Create a map from data6 using identificatie as the key
+    data6.features?.forEach(feature => {
+      const identificatie = feature.properties?.identificatie;
+      if (identificatie) {
+        data6Map.set(identificatie, feature); // Add the entire feature from data6
+      }
+    });
 
     const data4Features = data4.features || [];
 
@@ -111,6 +116,12 @@ export default async function handler(req, res) {
           return null; // Skip this feature if there's an error or no additional data
         }
 
+        // Find matching geometry from data6 based on identificatie (pandidentificatie in mergedData)
+        const data6Feature = data6Map.get(feature.properties?.pandidentificatie);
+        if (data6Feature) {
+          feature.geometry = data6Feature.geometry; // Add geometry from data6
+        }
+
         return {
           ...feature,
           additionalData: additionalInfo.data, // Only include the successful data
@@ -125,7 +136,6 @@ export default async function handler(req, res) {
       KADAS: data3,
       OBJECT: data5,
       MERGED: mergedData, // Only includes successful data
-      PAND: data6 // Include data from the new request
     };
 
     res.status(200).json(combinedData);
