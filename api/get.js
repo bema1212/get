@@ -55,16 +55,9 @@ export default async function handler(req, res) {
     const data4 = response4;
 
     const data4Features = data4.features || [];
-    const data6Features = data6.features || [];
-
-    const mergedData = data4Features.map(feature => {
-      const pandidentificatie = feature.properties?.pandidentificatie;
-      const matchingData6 = data6Features.find(item => item.properties?.identificatie === pandidentificatie);
-      if (matchingData6) {
-        feature.properties.geometry = matchingData6.geometry;
-      }
-      return feature;
-    });
+    const mergedData = data4Features.map(feature => ({
+      ...feature
+    }));
 
     const combinedData = {
       LOOKUP: data0,
