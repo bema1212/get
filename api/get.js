@@ -131,7 +131,7 @@ export default async function handler(req, res) {
       KADAS: data3,
       OBJECT: data5,
       MERGED: mergedData, // Only includes successful data
-      PAND: data6 // Include data from the new request
+      //PAND: data6 // Include data from the new request
     };
 
     res.status(200).json(combinedData);
