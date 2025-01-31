@@ -48,7 +48,7 @@ export default async function handler(req, res) {
 
     // Extract coordinates from target2 (assumed to be in format "x,y")
     const [x, y] = target2.split(',').map(coord => parseFloat(coord));
-    
+
     const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG:28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${target2}`;
     const response3 = await fetchWithErrorHandling(apiUrl3, { headers: { 'Content-Type': 'application/json' } });
 
@@ -105,15 +105,21 @@ export default async function handler(req, res) {
       .map(feature => {
         const identificatie = feature.properties?.identificatie;
         const additionalInfo = additionalDataMap.get(identificatie);
+        const pandData = data6.features.find(pand => pand.properties?.identificatie === feature.properties?.pandidentificatie);
 
-        // Only include the feature if there is no error in the additional data
-        if (!additionalInfo || additionalInfo.error) {
-          return null; // Skip this feature if there's an error or no additional data
+        // Only include the feature if there is no error in the additional data and matching PAND
+        if (!additionalInfo || additionalInfo.error || !pandData) {
+          return null; // Skip this feature if there's an error or no additional data or matching PAND
         }
 
         return {
           ...feature,
           additionalData: additionalInfo.data, // Only include the successful data
+          additionalData2: [
+            {
+              geometry: pandData.geometry, // Add PAND geometry to additionalData2
+            }
+          ],
         };
       })
       .filter(item => item !== null); // Remove any null (error or missing) entries
