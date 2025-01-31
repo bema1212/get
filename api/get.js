@@ -1,73 +1,57 @@
 export default async function handler(req, res) {
-  try {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    try {
+        const { x, y } = req.query; // Coordinates
 
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
+        const apiUrl1 = `https://example.com/api1?x=${x}&y=${y}`;
+        const apiUrl2 = `https://example.com/api2?x=${x}&y=${y}`;
+        const apiUrl3 = `https://example.com/api3?x=${x}&y=${y}`;
+        const apiUrl4 = `https://example.com/api4?x=${x}&y=${y}`;
+        const apiUrl5 = `https://example.com/api5?x=${x}&y=${y}`;
+
+        // PAND API (New)
+        const apiUrl6 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=100&outputFormat=application/json&srsName=EPSG:28992&typeName=bag:pand&Filter=%3CFilter%3E%20%3CDWithin%3E%3CPropertyName%3EGeometry%3C/PropertyName%3E%3Cgml:Point%3E%20%3Cgml:coordinates%3E${x},${y}%3C/gml:coordinates%3E%20%3C/gml:Point%3E%3CDistance%20units=%27m%27%3E50%3C/Distance%3E%3C/DWithin%3E%3C/Filter%3E`;
+
+        // Fetch all API data in parallel
+        const [data1, data2, data3, data4, data5, data6] = await Promise.all([
+            fetch(apiUrl1).then((res) => res.json()),
+            fetch(apiUrl2).then((res) => res.json()),
+            fetch(apiUrl3).then((res) => res.json()),
+            fetch(apiUrl4).then((res) => res.json()),
+            fetch(apiUrl5).then((res) => res.json()),
+            fetch(apiUrl6).then((res) => res.json()), // Fetch PAND data
+        ]);
+
+        // Merge the fetched data (Assuming `data4` is the primary dataset containing MERGED)
+        const mergedData = data4.MERGED || [];
+
+        // Attach geometry from PAND data to matching entries in MERGED
+        mergedData.forEach((mergedItem) => {
+            const pandId = mergedItem.properties.pandidentificatie;
+            const matchedPand = data6.features.find(
+                (pand) => pand.properties.identificatie === pandId
+            );
+
+            if (matchedPand) {
+                // Ensure additionalData2 exists
+                if (!mergedItem.additionalData2) {
+                    mergedItem.additionalData2 = [];
+                }
+
+                // Push the geometry object properly formatted
+                mergedItem.additionalData2.push({
+                    geometry: matchedPand.geometry
+                });
+            }
+        });
+
+        // Send the response
+        res.status(200).json({
+            MERGED: mergedData,
+            PAND: data6, // Keep the PAND data for reference if needed
+        });
+
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        res.status(500).json({ error: "Internal Server Error" });
     }
-
-    const { target0, target1, target2 } = req.query;
-
-    if (!target0 || !target1 || !target2) {
-      return res.status(400).json({ error: "Both target1 and target2 parameters are required" });
-    }
-
-    const apiUrl0 = `https://api.pdok.nl/bzk/locatieserver/search/v3_1/lookup?id=${target0}`;
-    const apiUrl1 = `https://public.ep-online.nl/api/v5/PandEnergielabel/AdresseerbaarObject/${target1}`;
-    const apiUrl2 = `https://opendata.polygonentool.nl/wfs?service=wfs&version=2.0.0&request=getfeature&typename=se:OGC_Warmtevlak,se:OGC_Elektriciteitnetbeheerdervlak,se:OGC_Gasnetbeheerdervlak,se:OGC_Telecomvlak,se:OGC_Waternetbeheerdervlak,se:OGC_Rioleringsvlakken&propertyname=name,disciplineCode&outputformat=application/json&srsname=EPSG:28992&bbox=${target2}`;
-    const [x, y] = target2.split(',').map(coord => parseFloat(coord));
-    const apiUrl5 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=wfs&version=2.0.0&request=getfeature&typeName=bag:verblijfsobject&outputformat=application/json&srsName=EPSG:4326&filter=%3Cfes:Filter%20xmlns:fes=%22http://www.opengis.net/fes/2.0%22%3E%3Cfes:PropertyIsEqualTo%3E%3Cfes:PropertyName%3Eidentificatie%3C/fes:PropertyName%3E%3Cfes:Literal%3E${encodeURIComponent(target1)}%3C/fes:Literal%3E%3C/fes:PropertyIsEqualTo%3E%3C/fes:Filter%3E`;
-    const apiUrl6 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&count=100&outputFormat=application/json&srsName=EPSG:28992&typeName=bag:pand&Filter=%3CFilter%3E%3CDWithin%3E%3CPropertyName%3EGeometry%3C/PropertyName%3E%3Cgml:Point%3E%3Cgml:coordinates%3E${x},${y}%3C/gml:coordinates%3E%3C/gml:Point%3E%3CDistance%20units=%27m%27%3E50%3C/Distance%3E%3C/DWithin%3E%3C/Filter%3E`;
-
-    const fetchWithErrorHandling = async (url, options = {}) => {
-      try {
-        const response = await fetch(url, options);
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return await response.json();
-      } catch (error) {
-        console.error(`Error fetching ${url}:`, error.message);
-        return { error: "error" };
-      }
-    };
-
-    const [data0, data1, data2, data5, data6] = await Promise.all([
-      fetchWithErrorHandling(apiUrl0),
-      fetchWithErrorHandling(apiUrl1, { headers: { "Authorization": process.env.AUTH_TOKEN } }),
-      fetchWithErrorHandling(apiUrl2),
-      fetchWithErrorHandling(apiUrl5),
-      fetchWithErrorHandling(apiUrl6)
-    ]);
-
-    const pandMap = new Map();
-    (data6.features || []).forEach(feature => {
-      pandMap.set(feature.properties.identificatie, feature.geometry);
-    });
-
-    const mergedData = (data5.features || []).map(feature => {
-      const pandIdentificatie = feature.properties?.pandidentificatie;
-      const additionalGeometry = pandMap.get(pandIdentificatie);
-      return {
-        ...feature,
-        additionalData2: additionalGeometry ? [additionalGeometry] : []
-      };
-    });
-
-    const combinedData = {
-      LOOKUP: data0,
-      EPON: data1,
-      NETB: data2,
-      OBJECT: data5,
-      PAND: data6,
-      MERGED: mergedData
-    };
-
-    res.status(200).json(combinedData);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
 }
