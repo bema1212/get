@@ -41,12 +41,7 @@ export default async function handler(req, res) {
           "Authorization": process.env.AUTH_TOKEN,
           'Content-Type': 'application/json',
         }
-      }),if (response.error) {
-        console.log("EPON primary API failed, trying fallback...");
-        response = await fetchWithRetry(eponUrl2, { headers: { "Content-Type": "application/xml" } }, 2, 1000);
-      }
-
-      return response;
+      }),
       fetchWithErrorHandling(apiUrl2, { headers: { 'Content-Type': 'application/json' } }),
       fetchWithErrorHandling(apiUrl5, { headers: { 'Content-Type': 'application/json' } })
     ]);
