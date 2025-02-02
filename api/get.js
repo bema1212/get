@@ -69,18 +69,52 @@ export default async function handler(req, res) {
 
     const data4Features = data4.features || [];
 
+    const additionalData = await Promise.all(data4Features.map(async (feature) => {
+      const identificatie = feature.properties?.identificatie;
+      if (!identificatie) return null;
+
+      const apiUrl = `https://yxorp-pi.vercel.app/api/handler?url=https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject/${identificatie}`;
+
+      try {
+        const response = await fetch(apiUrl, {
+          headers: {
+            "Authorization": process.env.AUTH_TOKEN,
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          return { identificatie, data };
+        } else {
+          return { identificatie, error: response.statusText };
+        }
+      } catch (error) {
+        return { identificatie, error: error.message };
+      }
+    }));
+
+    const additionalDataFiltered = additionalData.filter(item => item !== null);
+
+    const additionalDataMap = new Map();
+    additionalDataFiltered.forEach(item => {
+      additionalDataMap.set(item.identificatie, item);
+    });
+
     const mergedData = data4Features
       .map(feature => {
         const identificatie = feature.properties?.identificatie;
-        const pandData = data6.features.find(pand => pand.properties?.identificatie === feature.properties?.pandidentificatie); // Find matching PAND geometry
+        const additionalInfo = additionalDataMap.get(identificatie);
+        const pandData = data6.features.find(pand => pand.properties?.identificatie === feature.properties?.pandidentificatie);
 
-        // Only include the feature if there is a matching PAND geometry
-        if (!pandData) {
-          return null; // Skip this feature if there's no matching PAND
+        // Only include the feature if there is no error in the additional data and matching PAND
+        if (!additionalInfo || additionalInfo.error || !pandData) {
+          return null; // Skip this feature if there's an error or no additional data or matching PAND
         }
 
         return {
-          ...feature, // Keep the original feature
+          ...feature,
+          additionalData: additionalInfo.data, // Only include the successful data
           additionalData2: [
             {
               geometry: pandData.geometry, // Add PAND geometry to additionalData2
@@ -92,11 +126,12 @@ export default async function handler(req, res) {
 
     const combinedData = {
       LOOKUP: data0,
-      EPON: data1, // This remains separate, you can still use this data elsewhere
+      EPON: data1,
       NETB: data2,
       KADAS: data3,
       OBJECT: data5,
-      MERGED: mergedData, // Only includes valid data from data4 and data6
+      MERGED: mergedData, // Only includes successful data
+      // niet toevoegen, onnodige data PAND: data6 // Include data from the new request
     };
 
     res.status(200).json(combinedData);
