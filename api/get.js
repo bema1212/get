@@ -53,7 +53,7 @@ export default async function handler(req, res) {
 
     // Fetch EPON with fallback
     const fetchEponWithFallback = async () => {
-      const eponUrl2 = `https://pico.geodan.nl/cgi-bin/qgis_mapserv.fcgi?map=/usr/lib/cgi-bin/projects/gebouw_woningtype.qgs&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=gebouw&QUERY_LAYERS=gebouw&INFO_FORMAT=text/xml&FEATURE_COUNT=10&filter=%3CFilter%3E%3CPropertyIsEqualTo%3E%3CPropertyName%3Egebouw_id%3C/PropertyName%3E%3CLiteral%3E${target1}%3C/Literal%3E%3C/PropertyIsEqualTo%3E%3C/Filter%3E`;
+      const eponUrl2 = `https://pico.geodan.nl/cgi-bin/qgis_mapserv.fcgi?DPI=120&map=/usr/lib/cgi-bin/projects/gebouw_woningtype.qgs&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&CRS=EPSG%3A3857&WIDTH=937&HEIGHT=842&LAYERS=gebouw&STYLES=&FORMAT=image%2Fjpeg&QUERY_LAYERS=gebouw&INFO_FORMAT=text/xml&I=611&J=469&FEATURE_COUNT=10&bbox=${target2}`;
 
       let response = await fetchWithErrorHandling(apiUrl1, {
         headers: {
