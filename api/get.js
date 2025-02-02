@@ -9,7 +9,7 @@ export default async function handler(req, res) {
       return res.status(200).end();
     }
 
-    const { target0, target1, target2 } = req.query;
+    const { target0, target1, target2, target3 } = req.query;
 
     if (!target0 || !target1 || !target2 || !target3) {
       return res.status(400).json({ error: "Both target1 and target2 parameters are required" });
