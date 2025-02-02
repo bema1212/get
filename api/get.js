@@ -101,28 +101,30 @@ export default async function handler(req, res) {
       additionalDataMap.set(item.identificatie, item);
     });
 
-    const mergedData = data4Features
-      .map(feature => {
-        const identificatie = feature.properties?.identificatie;
-        const additionalInfo = additionalDataMap.get(identificatie);
-        const pandData = data6.features.find(pand => pand.properties?.identificatie === feature.properties?.pandidentificatie);
+   const mergedData = data4Features
+  .map(feature => {
+    const identificatie = feature.properties?.identificatie;
+    const additionalInfo = additionalDataMap.get(identificatie);
+    const pandData = data6.features.find(pand => pand.properties?.identificatie === feature.properties?.pandidentificatie);
 
-        // Only include the feature if there is no error in the additional data and matching PAND
-        if (!additionalInfo || additionalInfo.error || !pandData) {
-          return null; // Skip this feature if there's an error or no additional data or matching PAND
+    // Only include the feature if there is no error in the additional data and matching PAND
+    if (!additionalInfo || additionalInfo.error || !pandData) {
+      return null; // Skip this feature if there's an error or no additional data or matching PAND
+    }
+
+    return {
+      ...feature,
+      additionalData: additionalInfo.data, // Only include the successful data
+      additionalData2: [
+        {
+          geometry: pandData.geometry, // Add PAND geometry to additionalData2
         }
+      ],
+    };
+  })
+  .filter(item => item !== null); // Remove any null (error or missing) entries
 
-        return {
-          ...feature,
-          additionalData: additionalInfo.data, // Only include the successful data
-          additionalData2: [
-            {
-              geometry: pandData.geometry, // Add PAND geometry to additionalData2
-            }
-          ],
-        };
-      })
-      .filter(item => item !== null); // Remove any null (error or missing) entries
+
 
     const combinedData = {
       LOOKUP: data0,
