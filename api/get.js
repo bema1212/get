@@ -1,3 +1,5 @@
+import xml2js from 'xml2js';
+
 export default async function handler(req, res) { 
   try {
     // Set CORS headers
@@ -65,6 +67,19 @@ export default async function handler(req, res) {
       fetchWithErrorHandling(apiUrl5, { headers: { 'Content-Type': 'application/json' } })
     ]);
 
+    // Parse the XML response from apiUrl7 to extract the "woningtype"
+    const parseXMLForWoningtype = async (xmlString) => {
+      const parser = new xml2js.Parser();
+      try {
+        const result = await parser.parseStringPromise(xmlString);
+        const woningtype = result.GetFeatureInfoResponse.Layer[0].Feature[0].Attribute.find(attr => attr.$.name === "woningtype");
+        return woningtype ? woningtype.$.value : null;
+      } catch (err) {
+        console.error("Error parsing XML:", err);
+        return null;
+      }
+    };
+
     const data1 = data1Initial.error ? await fetchXMLWithRetry(apiUrl7, {
       headers: {
         "Authorization": process.env.AUTH_TOKEN,
@@ -72,9 +87,16 @@ export default async function handler(req, res) {
       }
     }, 2) : data1Initial;
 
-    // Add apiUrl7 to EPON if fetched
-    const EPON = data1.error ? data1 : {
-      data: data1,
+    let woningtype = null;
+    if (data1 && typeof data1 === 'string') {
+      // If data1 is XML (error case), extract the woningtype from the XML string
+      woningtype = await parseXMLForWoningtype(data1);
+    }
+
+    // Add woningtype to EPON if it was found
+    const EPON = {
+      data: data1.error ? data1 : data1Initial,
+      woningtype: woningtype, // Add the woningtype to EPON
       apiUrl: apiUrl7
     };
 
@@ -86,7 +108,7 @@ export default async function handler(req, res) {
 
     const combinedData = {
       LOOKUP: data0,
-      EPON: EPON, // Updated EPON
+      EPON: EPON, // Updated EPON with woningtype
       NETB: data2,
       KADAS: data3, // Restored KADAS data
       OBJECT: data5,
