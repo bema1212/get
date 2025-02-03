@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+export default async function handler(req, res) { 
   try {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -72,6 +72,12 @@ export default async function handler(req, res) {
       }
     }, 2) : data1Initial;
 
+    // Add apiUrl7 to EPON if fetched
+    const EPON = data1.error ? data1 : {
+      data: data1,
+      apiUrl: apiUrl7
+    };
+
     // Restore MERGED data logic
     const data4Features = data5.features || [];
     const mergedData = data4Features.map(feature => ({
@@ -80,7 +86,7 @@ export default async function handler(req, res) {
 
     const combinedData = {
       LOOKUP: data0,
-      EPON: data1, // Now returns raw XML if apiUrl1 fails
+      EPON: EPON, // Updated EPON
       NETB: data2,
       KADAS: data3, // Restored KADAS data
       OBJECT: data5,
