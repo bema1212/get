@@ -75,7 +75,8 @@ export default async function handler(req, res) {
     // Add apiUrl7 to EPON if fetched
     const EPON = data1.error ? data1 : {
       data: data1.trim(),
-      apiUrl: apiUrl7
+      apiUrl: apiUrl7,
+      type: response.headers.get('Content-Type')
     };
 
     // Restore MERGED data logic
