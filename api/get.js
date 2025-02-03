@@ -36,12 +36,19 @@ export default async function handler(req, res) {
       }
     };
 
-    const fetchWithRetry = async (url, options = {}, retries = 2) => {
+    const fetchXMLWithRetry = async (url, options = {}, retries = 2) => {
       for (let i = 0; i <= retries; i++) {
-        const result = await fetchWithErrorHandling(url, options);
-        if (!result.error) return result;
+        try {
+          const response = await fetch(url, options);
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return await response.text(); // Return raw XML
+        } catch (error) {
+          console.error(`Error fetching ${url}:`, error.message);
+        }
       }
-      return { error: "error" };
+      return "<error>error</error>"; // Return XML formatted error
     };
 
     const [data0, data1Initial, data2, data5] = await Promise.all([
@@ -56,7 +63,7 @@ export default async function handler(req, res) {
       fetchWithErrorHandling(apiUrl5, { headers: { 'Content-Type': 'application/json' } })
     ]);
 
-    const data1 = data1Initial.error ? await fetchWithRetry(apiUrl7, {
+    const data1 = data1Initial.error ? await fetchXMLWithRetry(apiUrl7, {
       headers: {
         "Authorization": process.env.AUTH_TOKEN,
         'Content-Type': 'application/json',
@@ -71,7 +78,7 @@ export default async function handler(req, res) {
 
     const combinedData = {
       LOOKUP: data0,
-      EPON: data1, // This now includes data from apiUrl7 if apiUrl1 failed
+      EPON: data1, // Now returns raw XML if apiUrl1 fails
       NETB: data2,
       OBJECT: data5,
       MERGED: mergedData, // Restored MERGED data
