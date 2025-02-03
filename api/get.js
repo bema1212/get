@@ -65,7 +65,7 @@ export default async function handler(req, res) {
    
 
     const data1 = data1Initial.error
-      ? "<error>error</error>"
+      ? "error"
       : data1Initial;
 
     const EPON = data1.error ? data1 : {
