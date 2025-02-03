@@ -19,10 +19,7 @@ export default async function handler(req, res) {
     const apiUrl1 = `https://public.ep-online.nl/api/v5/PandEnergielabel/AdresseerbaarObject/${target1}`;
     const apiUrl2 = `https://opendata.polygonentool.nl/wfs?service=wfs&version=2.0.0&request=getfeature&typename=se:OGC_Warmtevlak,se:OGC_Elektriciteitnetbeheerdervlak,se:OGC_Gasnetbeheerdervlak,se:OGC_Telecomvlak,se:OGC_Waternetbeheerdervlak,se:OGC_Rioleringsvlakken&propertyname=name,disciplineCode&outputformat=application/json&&SRSNAME=urn:ogc:def:crs:EPSG::28992&bbox=${target3}`;
     const apiUrl3 = `https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&QUERY_LAYERS=Perceelvlak&layers=Perceelvlak&INFO_FORMAT=application/json&FEATURE_COUNT=1&I=2&J=2&CRS=EPSG:28992&STYLES=&WIDTH=5&HEIGHT=5&BBOX=${target3}`;
-    const apiUrl7 = `https://pico.geodan.nl/cgi-bin/qgis_mapserv.fcgi?DPI=120&map=/usr/lib/cgi-bin/projects/gebouw_woningtype.qgs&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&CRS=EPSG%3A28992&WIDTH=937&HEIGHT=842&LAYERS=gebouw&STYLES=&FORMAT=image%2Fjpeg&QUERY_LAYERS=gebouw&INFO_FORMAT=text/xml&I=611&J=469&FEATURE_COUNT=10&bbox=${target3}`;
-    
-    const encodedTarget1 = encodeURIComponent(target1);
-    const apiUrl5 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=wfs&version=2.0.0&request=getfeature&typeName=bag:verblijfsobject&outputformat=application/json&srsName=EPSG:4326&filter=%3Cfes:Filter%3E%3Cfes:PropertyIsEqualTo%3E%3Cfes:PropertyName%3Eidentificatie%3C/fes:PropertyName%3E%3Cfes:Literal%3E${encodedTarget1}%3C/fes:Literal%3E%3C/fes:PropertyIsEqualTo%3E%3C/fes:Filter%3E`;
+    const apiUrl5 = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=wfs&version=2.0.0&request=getfeature&typeName=bag:verblijfsobject&outputformat=application/json&srsName=EPSG:4326&filter=%3Cfes:Filter%3E%3Cfes:PropertyIsEqualTo%3E%3Cfes:PropertyName%3Eidentificatie%3C/fes:PropertyName%3E%3Cfes:Literal%3E${encodeURIComponent(target1)}%3C/fes:Literal%3E%3C/fes:PropertyIsEqualTo%3E%3C/fes:Filter%3E`;
 
     const fetchWithErrorHandling = async (url, options = {}) => {
       try {
@@ -65,24 +62,16 @@ export default async function handler(req, res) {
       fetchWithErrorHandling(apiUrl5, { headers: { 'Content-Type': 'application/json' } })
     ]);
 
-  const sanitizeXML = (xmlString) => {
-  // Remove control characters and whitespace
-  return xmlString.replace(/[\x00-\x1F\x7F]/g, '').replace(/\s+/g, ' ').trim();
-};
+   
 
-const data1 = data1Initial.error
-  ? await fetchXMLWithRetry(apiUrl7, {
-      headers: {
-        "Authorization": process.env.AUTH_TOKEN,
-        "Content-Type": "application/json",
-      },
-    }, 2)
-  : data1Initial;
+    const data1 = data1Initial.error
+      ? "<error>error</error>"
+      : data1Initial;
 
-const EPON = data1.error ? data1 : {
-  data: sanitizeXML(data1).trim(), // Clean the XML data
-  apiUrl: apiUrl7
-};
+    const EPON = data1.error ? data1 : {
+      data: data1, // Clean the XML data
+      apiUrl: apiUrl1
+    };
 
     // Restore MERGED data logic
     const data4Features = data5.features || [];
