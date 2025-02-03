@@ -65,6 +65,14 @@ export default async function handler(req, res) {
       fetchWithErrorHandling(apiUrl5, { headers: { 'Content-Type': 'application/json' } })
     ]);
 
+    // Parse the XML response from apiUrl7 to extract the "woningtype"
+    const parseXMLForWoningtype = (xmlString) => {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlString, "application/xml");
+      const woningtypeElement = xmlDoc.querySelector('Attribute[name="woningtype"]');
+      return woningtypeElement ? woningtypeElement.getAttribute('value') : null;
+    };
+
     const data1 = data1Initial.error ? await fetchXMLWithRetry(apiUrl7, {
       headers: {
         "Authorization": process.env.AUTH_TOKEN,
@@ -72,9 +80,16 @@ export default async function handler(req, res) {
       }
     }, 2) : data1Initial;
 
-    // Add apiUrl7 to EPON if fetched
-    const EPON = data1.error ? data1 : {
-      data: data1,
+    let woningtype = null;
+    if (data1 && typeof data1 === 'string') {
+      // If data1 is XML (error case), extract the woningtype from the XML string
+      woningtype = parseXMLForWoningtype(data1);
+    }
+
+    // Add woningtype to EPON if it was found
+    const EPON = {
+      data: data1.error ? data1 : data1Initial,
+      woningtype: woningtype, // Add the woningtype to EPON
       apiUrl: apiUrl7
     };
 
@@ -86,7 +101,7 @@ export default async function handler(req, res) {
 
     const combinedData = {
       LOOKUP: data0,
-      EPON: EPON, // Updated EPON
+      EPON: EPON, // Updated EPON with woningtype
       NETB: data2,
       KADAS: data3, // Restored KADAS data
       OBJECT: data5,
