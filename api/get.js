@@ -80,7 +80,7 @@ const data1 = data1Initial.error
   : data1Initial;
 
 const EPON = data1.error ? data1 : {
-  data: sanitizeXML(data1).trim(), // Clean the XML data
+  data: sanitizeXML(data1).trim().replace(/\\/g, ''),
   apiUrl: apiUrl7
 };
 
