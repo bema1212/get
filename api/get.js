@@ -46,7 +46,7 @@ export default async function handler(req, res) {
           console.error(`Error fetching ${url}:`, error.message);
         }
       }
-      return "<error>error</error>"; // Return XML formatted error
+      return "error"; // Return XML formatted error
     };
 
     const [data0, data1Initial, data2, data3, data5] = await Promise.all([
