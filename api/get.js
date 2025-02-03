@@ -74,7 +74,7 @@ export default async function handler(req, res) {
 
     // Add apiUrl7 to EPON if fetched
     const EPON = data1.error ? data1 : {
-      data: data1,
+      data: data1.trim(),
       apiUrl: apiUrl7
     };
 
