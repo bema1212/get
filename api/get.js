@@ -65,19 +65,24 @@ export default async function handler(req, res) {
       fetchWithErrorHandling(apiUrl5, { headers: { 'Content-Type': 'application/json' } })
     ]);
 
-    const data1 = data1Initial.error ? await fetchXMLWithRetry(apiUrl7, {
+  const sanitizeXML = (xmlString) => {
+  // Remove control characters and whitespace
+  return xmlString.replace(/[\x00-\x1F\x7F]/g, '').replace(/\s+/g, ' ').trim();
+};
+
+const data1 = data1Initial.error
+  ? await fetchXMLWithRetry(apiUrl7, {
       headers: {
         "Authorization": process.env.AUTH_TOKEN,
-        'Content-Type': 'application/json',
-      }
-    }, 2) : data1Initial;
+        "Content-Type": "application/json",
+      },
+    }, 2)
+  : data1Initial;
 
-    // Add apiUrl7 to EPON if fetched
-    const EPON = data1.error ? data1 : {
-      data: data1.trim(),
-      apiUrl: apiUrl7,
-      type: response.headers.get('Content-Type')
-    };
+const EPON = data1.error ? data1 : {
+  data: sanitizeXML(data1), // Clean the XML data
+  apiUrl: apiUrl7
+};
 
     // Restore MERGED data logic
     const data4Features = data5.features || [];
