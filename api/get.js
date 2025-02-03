@@ -67,7 +67,7 @@ export default async function handler(req, res) {
 
   const sanitizeXML = (xmlString) => {
   // Remove control characters and whitespace
-  return xmlString.replace(/[\x00-\x1F\x7F]/g, '').replace(/\s+/g, ' ').trim();
+  return xmlString.replace(/[\x00-\x1F\x7F]/g, '').replace(/\s+/g, ' ').replace('\', '').trim();
 };
 
 const data1 = data1Initial.error
@@ -80,7 +80,7 @@ const data1 = data1Initial.error
   : data1Initial;
 
 const EPON = data1.error ? data1 : {
-  data: sanitizeXML(data1).trim().replace('\', ''),
+  data: sanitizeXML(data1).trim(),
   apiUrl: apiUrl7
 };
 
